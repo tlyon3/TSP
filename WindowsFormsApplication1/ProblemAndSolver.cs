@@ -486,13 +486,53 @@ namespace TSP
         {
             string[] results = new string[3];
 
-            // TODO: Add your implementation for your advanced solver here.
 
+            // TODO bssf = output of greedy algorithm
+            int numCities = Cities.Length;
+
+
+            // while(bestChild.route < bssf.route)
+
+            for(int i = 0; i < numCities - 1; i++)
+            {
+                for(int k = 0; k < numCities - 1; k++)
+                {
+                    // swap i and k
+                    // check to see if it's a better solution than best child
+                    // if so, set best child be a solution
+                }
+
+                // set bssf to be best child if best child is better
+                // if not, kick out?
+            }
             results[COST] = "not implemented";    // load results into array here, replacing these dummy values
             results[TIME] = "-1";
             results[COUNT] = "-1";
 
             return results;
+        }
+
+        public void swap(int i, int k)
+        {
+            ArrayList swapped = new ArrayList();
+
+            int numCities = Cities.Length;
+            for(int c = 0; i <= i - 1; ++c)
+            {
+                swapped.Add(Cities[c]);
+            }
+
+            int dec = 0;
+            for (int c = i; c <= k; ++c)
+            {
+                swapped.Add(Cities[k - dec]);
+                dec++;
+            }
+
+            for(int c = k + 1; c < numCities; ++c)
+            {
+                swapped.Add(Cities[c]);
+            }
         }
         #endregion
     }
