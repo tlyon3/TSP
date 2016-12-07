@@ -478,9 +478,56 @@ namespace TSP
         /// </summary>
         /// <returns>results array for GUI that contains three ints: cost of solution, time spent to find solution, number of solutions found during search (not counting initial BSSF estimate)</returns>
         public string[] greedySolveProblem()
-        {
-             			Stopwatch timer = new Stopwatch(); 			string[] results = new string[3]; 			double bestSoFar = double.MaxValue; 			Boolean[] visited = new Boolean[Cities.Length]; 			int currentCity; 			int numberOfSolutions = 0;  			//starting cityy 			timer.Start(); 			for (int i = 0; i < Cities.Length;i++){ 				 				double totalCost = 0; 				//if we have passed the time limit 				if(timer.Elapsed.Seconds > time_limit){ 					break; 				} 				//reset visited array 				for (int j = 0; j < Cities.Length;j++){ 					visited[j] = false; 				}  				visited[i] = true; 				Route = new ArrayList(); 				Route.Add(Cities[i]); 				currentCity = i;  				//go through each other city 				for (int j = 0; j < Cities.Length;j++){ 					int nextCity = getNextCity(j, visited); 					totalCost += Cities[j].costToGetTo(Cities[nextCity]); 					visited[nextCity] = true; 					Route.Add(Cities[nextCity]); 				} 				numberOfSolutions++; 				//if there was a solution and it was better that the bestSoFar 				if(totalCost < bestSoFar && totalCost != double.PositiveInfinity){
-					Route.RemoveAt(Route.Count - 1); 					bssf = new TSPSolution(Route); 					bestSoFar = totalCost; 					//don't draw it if it is initial; 					if(initialBssf){ 						currentBssf = bestSoFar; 						return null; 					} 					timer.Stop();  					results[COST] = bestSoFar.ToString(); 					results[TIME] = timer.Elapsed.Seconds.ToString(); 					results[COUNT] = numberOfSolutions.ToString(); 				} 			}  			timer.Stop(); 			results[COST] = bestSoFar.ToString(); 			results[TIME] = timer.Elapsed.Seconds.ToString(); 			results[COUNT] = numberOfSolutions.ToString();  			return results;         }  		private int getNextCity(int currentCity, Boolean[] visited){ 			double minCost = double.MaxValue; 			int minCity = currentCity; 			for (int i = 0; i < Cities.Length;i++){ 				if(visited[i] || i==currentCity){ 					continue; 				}	 				else { 					double tempCost = Cities[currentCity].costToGetTo(Cities[i]); 					if(tempCost < minCost){ 						minCost = tempCost; 						minCity = i; 					} 				} 			} 			return minCity; 
+        { 			string[] results = new string[3];
+			double bestCost = double.MaxValue;
+			this.bssf = null;
+			int count = 0;
+			Stopwatch timer = new Stopwatch();
+			timer.Start();
+			for (int i = 0; i < Cities.Length; i++) {
+				if (timer.ElapsedMilliseconds >= time_limit) {
+					break;
+				}
+				ArrayList citiesLeft = new ArrayList(Cities);
+				ArrayList route = new ArrayList();
+				City currentCity = (City)citiesLeft[i];
+				citiesLeft.RemoveAt(i);
+				route.Add(currentCity);
+				while (citiesLeft.Count > 0) {
+					double minDistance = Double.PositiveInfinity;
+					City nextCity = null;
+					for (int j = 0; j < citiesLeft.Count; j++) {
+						City city = (City)citiesLeft[j];
+						double distance = currentCity.costToGetTo(city);
+						if (distance < minDistance) {
+							minDistance = distance;
+							nextCity = city;
+						}
+					}
+					if (nextCity == null) {
+						break;
+					}
+					else {
+						route.Add(nextCity);
+						citiesLeft.Remove(nextCity);
+						currentCity = nextCity;
+					}
+				}
+				if (route.Count == Cities.Length) {
+					TSPSolution tour = new TSPSolution(route);
+					if (tour.costOfRoute() < bestCost) {
+						count++;
+						this.bssf = tour;
+						bestCost = tour.costOfRoute();
+					}
+				}
+			}
+			timer.Stop();
+
+			results[COST] = costOfBssf().ToString(); // load results into array here,
+			results[TIME] = timer.Elapsed.ToString();
+			results[COUNT] = count.ToString();
+			return results;         }  		private int getNextCity(int currentCity, Boolean[] visited){ 			double minCost = double.MaxValue; 			int minCity = currentCity; 			for (int i = 0; i < Cities.Length;i++){ 				if(visited[i] || i==currentCity){ 					continue; 				}	 				else { 					double tempCost = Cities[currentCity].costToGetTo(Cities[i]); 					if(tempCost < minCost){ 						minCost = tempCost; 						minCity = i; 					} 				} 			} 			return minCity; 
         }
 
         public string[] fancySolveProblem()
@@ -489,6 +536,9 @@ namespace TSP
 			//set initial bssf
 			initialBssf = true;
 			greedySolveProblem();
+			//defaultSolveProblem();
+			Console.WriteLine("---------------");
+			Console.WriteLine("Initial bssf cost: " + bssf.costOfRoute().ToString());
 			Stopwatch timer = new Stopwatch();
             // TODO bssf = output of greedy algorithm
             int numCities = Cities.Length;
@@ -502,9 +552,12 @@ namespace TSP
 					Console.WriteLine("Fancy timed out");
 					break;
 				}
-
+				improved = false;
 				for (int i = 0; i < numCities - 1; i++) {
 					for (int k = 0; k < numCities - 1; k++) {
+						if(i==k){
+							continue;
+						}
 						// swap i and kk
 						TSPSolution checkSolution = swap(i, k);
 						solutions++;
@@ -513,17 +566,17 @@ namespace TSP
 						if (cost < bssf.costOfRoute()) {
 							// if so, set best child be a solutionn
 							bssf = checkSolution;
+							improved = true;
 						}
 						//if didn't improve, found local optimum
-						else {
-							improved = false;
-						}
 					}
 				}
 			}
+			Console.WriteLine("K-opt cost: " + bssf.costOfRoute().ToString());
+			Console.WriteLine("Number of solutions: " + solutions);
 			timer.Stop();
 			results[COST] = bssf.costOfRoute().ToString();    // load results into array here, replacing these dummy values
-			results[TIME] = timer.Elapsed.Seconds.ToString();
+			results[TIME] = timer.Elapsed.TotalSeconds.ToString();
 			results[COUNT] = solutions.ToString();
 
             return results;
@@ -534,21 +587,22 @@ namespace TSP
             ArrayList swapped = new ArrayList();
 
             int numCities = Cities.Length;
-            for(int c = 0; i <= i - 1; ++c)
+			Route = bssf.Route;
+            for(int c = 0; c <= i - 1; ++c)
             {
-                swapped.Add(Cities[c]);
+				swapped.Add(Route[c]);
             }
 
             int dec = 0;
             for (int c = i; c <= k; ++c)
             {
-                swapped.Add(Cities[k - dec]);
+				swapped.Add(Route[k - dec]);
                 dec++;
             }
 
             for(int c = k + 1; c < numCities; ++c)
             {
-                swapped.Add(Cities[c]);
+				swapped.Add(Route[c]);
             }
 			return new TSPSolution(swapped);
         }
