@@ -1,3 +1,6 @@
-*.pdf
-*.docx
-*.numbers
+*
+/WindowsFormsApplication1/bin
+/WindowsFormsApplication1/obj
+TSP.userprefs
+ 
+!/WindowsFormsApplication1/*.cs

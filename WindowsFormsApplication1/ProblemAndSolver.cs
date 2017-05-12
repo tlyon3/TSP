@@ -558,7 +558,7 @@ namespace TSP
 						if(i==k){
 							continue;
 						}
-						// swap i and kk
+						// swap i and k
 						TSPSolution checkSolution = swap(i, k);
 						solutions++;
 						double cost = checkSolution.costOfRoute();
